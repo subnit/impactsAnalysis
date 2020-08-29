@@ -53,7 +53,11 @@
             <artifactId>org.eclipse.jgit</artifactId>
             <version>5.8.1.202007141445-r</version>
         </dependency>
-
+        <dependency>
+        <groupId>org.subnit</groupId>
+        <artifactId>subnit-base</artifactId>
+        <version>1.0</version>
+        </dependency>
     </dependencies>
 
 
