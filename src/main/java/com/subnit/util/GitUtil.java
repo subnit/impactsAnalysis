@@ -15,22 +15,45 @@ import java.io.File;
  * @author subo
  */
 public class GitUtil {
-    public static String cloneGit() throws GitAPIException {
-        CredentialsProvider credentialsProvider = new UsernamePasswordCredentialsProvider("subnit@163.com", "tiantian0971");
-        Git git = Git.cloneRepository().setURI("https://github.com/subnit/impactsAnalysis.git")
-                .setBranch("master")
-                .setDirectory(new File("/Users/huihui/gitTemp"))
-                .setCredentialsProvider(credentialsProvider)
-                .call();
-        return "";
-    }
-
-    public static void main(String[] args) {
+    public static String cloneGit(String userName, String password, String repo, String branch, String directory)  {
+        deleteDir(new File(directory));
+        CredentialsProvider credentialsProvider = new UsernamePasswordCredentialsProvider(userName, password);
         try {
-            cloneGit();
+            Git git = Git.cloneRepository().setURI(repo)
+                    .setBranch(branch)
+                    .setDirectory(new File(directory))
+                    .setCredentialsProvider(credentialsProvider)
+                    .call();
         } catch (GitAPIException e) {
             e.printStackTrace();
         }
+        return directory;
+    }
+
+    private static boolean deleteDir(File dir) {
+        if (dir.isDirectory()) {
+            String[] children = dir.list();
+            if (children != null) {
+                for (String child : children) {
+                    boolean success = deleteDir(new File(dir, child));
+                    if (!success) {
+                        return false;
+                    }
+                }
+            }
+        }
+        return dir.delete();
+    }
+
+
+    public static void main(String[] args) {
+        String userName = "";
+        String password = "";
+        String repo = "https://github.com/subnit/impactsAnalysis.git";
+        String branch = "master";
+        String directory = "/Users/huihui/gitTemp/" + branch;
+
+        cloneGit(userName, password, repo, branch, directory);
     }
 
 
