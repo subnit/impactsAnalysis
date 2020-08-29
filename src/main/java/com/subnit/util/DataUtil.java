@@ -1,4 +1,4 @@
-package com.subnit.data;
+package com.subnit.util;
 
 import java.util.Collection;
 

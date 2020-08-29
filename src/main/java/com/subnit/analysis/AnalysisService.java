@@ -2,7 +2,7 @@ package com.subnit.analysis;
 
 import com.alibaba.fastjson.JSONObject;
 import com.google.common.collect.Ordering;
-import com.subnit.data.DataUtil;
+import com.subnit.util.DataUtil;
 
 import javax.annotation.Nonnull;
 import java.io.File;
