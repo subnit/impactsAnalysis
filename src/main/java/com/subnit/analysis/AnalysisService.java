@@ -29,6 +29,8 @@ public class AnalysisService {
 
     public static List<ShadowClass> getAllClass(String jarURL) {
         File jarFile = new File(jarURL);
+
+        System.out.println("加了一行...");
         final String jarFilePath = jarFile.getPath();
         final ClassPath classPath;
         try {
