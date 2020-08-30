@@ -39,8 +39,9 @@ import static com.subnit.base.data.FileUtil.deleteDir;
  *
  * @author subo
  */
-public class GitUtil {
+public class CodeDiff {
     public final static String REF_HEADS = "refs/heads/";
+
     public static String cloneGit(String userName, String password, String repo, String branch, String directory)  {
         deleteDir(new File(directory));
         CredentialsProvider credentialsProvider = new UsernamePasswordCredentialsProvider(userName, password);
@@ -379,12 +380,8 @@ public class GitUtil {
         String gitBranchA = "master";
         String gitBranchB = "gitUtil";
         List<ClassInfo> classInfos = diffMethods(repo, gitBranchA, gitBranchB, userName, password);
-
-
         //List<DiffEntry> diff = getDiff(credentialsProvider, repo, gitBranchA, gitBranchB, directory);
         System.out.println(JSONObject.toJSONString(classInfos));
-
-
     }
 
 

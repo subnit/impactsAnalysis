@@ -35,8 +35,11 @@ public class AnalysisService {
         final ClassPath classPath;
         try {
             final ClassLoader classLoader = creatClassLoaderForJar(jarFilePath);
+            Class<?> aClass = classLoader.loadClass("com.subnit.anlysis.B");
+            Class<?> superclass = aClass.getSuperclass();
+            Class<?>[] interfaces = aClass.getInterfaces();
             classPath = ClassPath.from(classLoader);
-        } catch (IOException e) {
+        } catch (IOException | ClassNotFoundException e) {
             throw new IllegalStateException(String.format("Unable to create classloader for jar %s", jarFilePath), e);
         }
 
@@ -63,7 +66,7 @@ public class AnalysisService {
         return  res;
     }
 
-    public static List<MethodCoupling> getAllMethodCoupling(List<ShadowClass> classesFromJarClassLoader, String filter) {
+    public   static List<MethodCoupling> getAllMethodCoupling(List<ShadowClass> classesFromJarClassLoader, String filter) {
         CouplingFilterConfig filterConfig = JSONObject.parseObject(filter, CouplingFilterConfig.class);
         filterConfig.fillPattern();
         final UsageCollector usageCollector = new UsageCollector(filterConfig);
@@ -123,27 +126,43 @@ public class AnalysisService {
     }
 
     static ShadowClass mapClassInfoToShadowClass(@Nonnull final ClassPath.ClassInfo classInfo) throws IOException {
+        if (classInfo.getName().startsWith("com.subnit.anlysis.Usage")) {
+            System.out.println();
+        }
+
         return new ShadowClass(classInfo.getName(), classInfo.asByteSource().read());
     }
 
 
     public static void main(String[] args) {
         //List<ShadowClass> allClass = getAllClass("/Users/huihui/IdeaProjects/subnit-web/subnit-web-util/target/subnit-web-util-0.0.1-SNAPSHOT.jar");
-        List<ShadowClass> allClass = getAllClass("/Users/huihui/.m2/repository/net/oschina/jmind/jmind-base/2.1.0/jmind-base-2.1.0.jar");
+        List<ShadowClass> allClass2 = getAllClass("/Users/huihui/IdeaProjects/subnit-web/subnit-web-application/target/subnit-web-application-0.0.1-SNAPSHOT.jar");
+        List<ShadowClass> allClass = getAllClass("/Users/huihui/IdeaProjects/subnit-web/subnit-web-start/target/subnit-web-start-0.0.1-SNAPSHOT.jar");
+        List<ShadowClass> allClass1 = getAllClass("/Users/huihui/IdeaProjects/subnit-web/subnit-web-infrastructure/target/subnit-web-infrastructure-0.0.1-SNAPSHOT.jar");
+        List<ShadowClass> allClass3 = getAllClass("/Users/huihui/IdeaProjects/subnit-web/subnit-web-controller/target/subnit-web-controller-0.0.1-SNAPSHOT.jar");
+        List<ShadowClass> allClass4 = getAllClass("/Users/huihui/IdeaProjects/subnit-web/subnit-web-domain/target/subnit-web-domain-0.0.1-SNAPSHOT.jar");
+        List<ShadowClass> allClass5 = getAllClass("/Users/huihui/IdeaProjects/subnit-web/subnit-web-util/target/subnit-web-util-0.0.1-SNAPSHOT.jar");
+        allClass.addAll(allClass1);
+        allClass.addAll(allClass2);
+        allClass.addAll(allClass3);
+        allClass.addAll(allClass4);
+        allClass.addAll(allClass5);
         String filter = "{\n" +
                 "  \"include\": {\n" +
-                "    \"targetPackage\": \"^(jmind).*$\"\n" +
+                "    \"targetPackage\": \"^(com.subnit).*$\"\n" +
                 "  },\n" +
                 "  \"exclude\": {\n" +
                 "    \"sourcePackage\": \"^(com\\\\.google).*$\"\n" +
                 "  }\n" +
                 "}\n";
         List<MethodCoupling> allMethodCoupling = getAllMethodCoupling(allClass, filter);
+        System.out.println(JSONObject.toJSONString(allMethodCoupling));
         Map<String, Set<String>> methodRelationMap = getMethodRelationMap(allMethodCoupling);
+
         System.out.println(JSONObject.toJSONString(methodRelationMap));
         List<String> res = new ArrayList<>();
-        res.add("jmind.base.util.DataUtil_isEmpty(Ljava/lang/String;)Z");
-        getMethodInfluence("jmind.base.util.DataUtil_isEmpty(Ljava/lang/String;)Z", methodRelationMap, res);
+        res.add("com.subnit.anlysis.Method_getSimpleClassName()Ljava/lang/String;");
+        getMethodInfluence("com.subnit.anlysis.Method_getSimpleClassName()Ljava/lang/String;", methodRelationMap, res);
         System.out.println(JSONObject.toJSONString(res));
     }
 }

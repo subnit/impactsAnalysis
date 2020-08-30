@@ -68,6 +68,9 @@ public class ClassVisitor extends org.objectweb.asm.ClassVisitor {
                                                        final String signature,
                                                        final String[] exceptions) {
         final org.objectweb.asm.MethodVisitor methodVisitor = super.visitMethod(access, name, descriptor, signature, exceptions);
+        if (className.startsWith("com.subnit.anlysis.Usage")) {
+            System.out.println();
+        }
         final Method method = new Method(className, name + descriptor);
         return new ClassMethodVisitor(method, methodVisitor, collect);
     }
