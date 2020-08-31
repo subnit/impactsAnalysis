@@ -16,15 +16,18 @@
 
 package com.subnit.analysis;
 
+import java.util.Set;
+
 public class ShadowClass {
 
     private String className;
     private byte[] classBytes;
-
+    private Set<String> effectClasses;
     public ShadowClass(){}
-    public ShadowClass(String className , byte[] classBytes){
+    public ShadowClass(String className , byte[] classBytes, Set<String> effectClasses){
         this.className = className;
         this.classBytes = classBytes;
+        this.effectClasses = effectClasses;
     }
 
 
@@ -43,5 +46,13 @@ public class ShadowClass {
 
     public void setClassBytes(byte[] classBytes) {
         this.classBytes = classBytes;
+    }
+
+    public Set<String> getEffectClasses() {
+        return effectClasses;
+    }
+
+    public void setEffectClasses(Set<String> effectClasses) {
+        this.effectClasses = effectClasses;
     }
 }

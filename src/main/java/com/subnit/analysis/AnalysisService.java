@@ -1,6 +1,7 @@
 package com.subnit.analysis;
 
 import com.alibaba.fastjson.JSONObject;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Ordering;
 import com.subnit.base.data.DataUtil;
 
@@ -27,44 +28,59 @@ public class AnalysisService {
 
     static Predicate<String> classNameFilter = s -> true;
 
-    public static List<ShadowClass> getAllClass(String jarURL) {
-        File jarFile = new File(jarURL);
-
-        System.out.println("加了一行...");
-        final String jarFilePath = jarFile.getPath();
-        final ClassPath classPath;
-        try {
-            final ClassLoader classLoader = creatClassLoaderForJar(jarFilePath);
-            Class<?> aClass = classLoader.loadClass("com.subnit.anlysis.B");
-            Class<?> superclass = aClass.getSuperclass();
-            Class<?>[] interfaces = aClass.getInterfaces();
-            classPath = ClassPath.from(classLoader);
-        } catch (IOException | ClassNotFoundException e) {
-            throw new IllegalStateException(String.format("Unable to create classloader for jar %s", jarFilePath), e);
+    public static List<ShadowClass> getAllClass(String[] jarURL) throws MalformedURLException {
+        List<ClassPath.ClassInfo> classInfoList = new ArrayList<>();
+        for (String url : jarURL) {
+            classInfoList.addAll(getClassInfoList(url));
         }
+        ClassLoader classLoader = creatClassLoaderForJar(jarURL);
 
-        final String prefix = fileNameToJarPrefix(jarFilePath);
-        final Predicate<ClassPath.ClassInfo> predicateClassesOnlyFromJar =
-                classInfo -> classInfo.url().toString().startsWith(prefix);
-        final List<ClassPath.ClassInfo> classInfoList =
-                classPath.getAllClasses()
-                        .stream()
-                        .filter(predicateClassesOnlyFromJar)// select classes only from the Jar
-                        //.filter(c -> classNameFilter.test(c.getName()))// apply the user defined filter
-                        .sorted(Ordering.natural().onResultOf(ClassPath.ClassInfo::getName))// always return the ordered list (by name)
-                        .collect(toList());
 
         List<ShadowClass> res = new ArrayList<>();
         for (ClassPath.ClassInfo classInfo : classInfoList) {
             try {
-                res.add(mapClassInfoToShadowClass(classInfo));
-            } catch (IOException e) {
+                res.add(mapClassInfoToShadowClass(classInfo, classLoader));
+
+            } catch (IOException | ClassNotFoundException e) {
                 throw new IllegalStateException(String.format("Unable to load class %s", classInfo.getName()), e);
             }
         }
 
         return  res;
     }
+
+
+    private static List<ClassPath.ClassInfo> getClassInfoList(String jarURL) {
+        File jarFile = new File(jarURL);
+
+        System.out.println("加了一行...");
+        final String jarFilePath = jarFile.getPath();
+        final ClassPath classPath;
+        final ClassLoader classLoader;
+        try {
+            classLoader = creatClassLoaderForJar(jarURL);
+          /*  Class<?> aClass = classLoader.loadClass("com.subnit.anlysis.ClassB");
+            Class<?> superclass = aClass.getSuperclass();
+            Class<?>[] interfaces = aClass.getInterfaces();
+            java.lang.reflect.Method[] methods = aClass.getMethods();
+            java.lang.reflect.Method[] declaredMethods = aClass.getDeclaredMethods();*/
+            classPath = ClassPath.from(classLoader);
+        } catch (Exception e) {
+            throw new IllegalStateException(String.format("Unable to create classloader for jar %s", jarURL), e);
+        }
+
+        final String prefix = fileNameToJarPrefix(jarFilePath);
+        final Predicate<ClassPath.ClassInfo> predicateClassesOnlyFromJar =
+                classInfo -> classInfo.url().toString().startsWith(prefix) && classInfo.url().toString().contains("com/subnit") && !classInfo.url().toString().contains("BOOT-INF/classes");
+        return classPath.getAllClasses()
+                        .stream()
+                        .filter(predicateClassesOnlyFromJar)// select classes only from the Jar
+                        //.filter(c -> classNameFilter.test(c.getName()))// apply the user defined filter
+                        .sorted(Ordering.natural().onResultOf(ClassPath.ClassInfo::getName))// always return the ordered list (by name)
+                        .collect(toList());
+    }
+
+
 
     public   static List<MethodCoupling> getAllMethodCoupling(List<ShadowClass> classesFromJarClassLoader, String filter) {
         CouplingFilterConfig filterConfig = JSONObject.parseObject(filter, CouplingFilterConfig.class);
@@ -107,6 +123,15 @@ public class AnalysisService {
         }
 
 
+    private static ClassLoader creatClassLoaderForJar(@Nonnull final String[] jarURL) throws MalformedURLException {
+        URL[] urls = new URL[jarURL.length];
+        for (int i = 0; i < jarURL.length; i++) {
+           urls[i] =  new URL(fileNameToFileProtocol(jarURL[i]));
+        }
+        final ClassLoader bootstrapClassLoader = ClassLoader.getSystemClassLoader().getParent();
+        return URLClassLoader.newInstance(urls, bootstrapClassLoader);
+    }
+
     private static ClassLoader creatClassLoaderForJar(@Nonnull final String jarFileName) throws MalformedURLException {
         final URL jarURL = new URL(fileNameToFileProtocol(jarFileName));
         final ClassLoader bootstrapClassLoader = ClassLoader.getSystemClassLoader().getParent();
@@ -125,28 +150,39 @@ public class AnalysisService {
         return "jar:" + fileNameToFileProtocol(jarFileFullPath) + "!";
     }
 
-    static ShadowClass mapClassInfoToShadowClass(@Nonnull final ClassPath.ClassInfo classInfo) throws IOException {
+    static ShadowClass mapClassInfoToShadowClass(@Nonnull final ClassPath.ClassInfo classInfo, ClassLoader classLoader) throws IOException, ClassNotFoundException {
         if (classInfo.getName().startsWith("com.subnit.anlysis.Usage")) {
             System.out.println();
         }
-
-        return new ShadowClass(classInfo.getName(), classInfo.asByteSource().read());
+        System.out.println(classInfo.getName());
+        Class<?> aClass = classLoader.loadClass(classInfo.getName());
+        Class<?> superclass = aClass.getSuperclass();
+        Class<?>[] interfaces = aClass.getInterfaces();
+        Set<String> effectClasses = new HashSet<>();
+        if (superclass != null) {
+            effectClasses.add(superclass.getName());
+        }
+        for (Class<?> anInterface : interfaces) {
+            effectClasses.add(anInterface.getName());
+        }
+        return new ShadowClass(classInfo.getName(), classInfo.asByteSource().read(), effectClasses);
     }
 
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws MalformedURLException, ClassNotFoundException {
+        List<String> list = new ArrayList<>();
+
         //List<ShadowClass> allClass = getAllClass("/Users/huihui/IdeaProjects/subnit-web/subnit-web-util/target/subnit-web-util-0.0.1-SNAPSHOT.jar");
-        List<ShadowClass> allClass2 = getAllClass("/Users/huihui/IdeaProjects/subnit-web/subnit-web-application/target/subnit-web-application-0.0.1-SNAPSHOT.jar");
-        List<ShadowClass> allClass = getAllClass("/Users/huihui/IdeaProjects/subnit-web/subnit-web-start/target/subnit-web-start-0.0.1-SNAPSHOT.jar");
-        List<ShadowClass> allClass1 = getAllClass("/Users/huihui/IdeaProjects/subnit-web/subnit-web-infrastructure/target/subnit-web-infrastructure-0.0.1-SNAPSHOT.jar");
-        List<ShadowClass> allClass3 = getAllClass("/Users/huihui/IdeaProjects/subnit-web/subnit-web-controller/target/subnit-web-controller-0.0.1-SNAPSHOT.jar");
-        List<ShadowClass> allClass4 = getAllClass("/Users/huihui/IdeaProjects/subnit-web/subnit-web-domain/target/subnit-web-domain-0.0.1-SNAPSHOT.jar");
-        List<ShadowClass> allClass5 = getAllClass("/Users/huihui/IdeaProjects/subnit-web/subnit-web-util/target/subnit-web-util-0.0.1-SNAPSHOT.jar");
-        allClass.addAll(allClass1);
-        allClass.addAll(allClass2);
-        allClass.addAll(allClass3);
-        allClass.addAll(allClass4);
-        allClass.addAll(allClass5);
+        list.add("/Users/huihui/IdeaProjects/subnit-web/subnit-web-application/target/subnit-web-application-0.0.1-SNAPSHOT.jar");
+        list.add("/Users/huihui/IdeaProjects/subnit-web/subnit-web-start/target/subnit-web-start-0.0.1-SNAPSHOT.jar");
+        list.add("/Users/huihui/IdeaProjects/subnit-web/subnit-web-infrastructure/target/subnit-web-infrastructure-0.0.1-SNAPSHOT.jar");
+        list.add("/Users/huihui/IdeaProjects/subnit-web/subnit-web-controller/target/subnit-web-controller-0.0.1-SNAPSHOT.jar");
+        list.add("/Users/huihui/IdeaProjects/subnit-web/subnit-web-domain/target/subnit-web-domain-0.0.1-SNAPSHOT.jar");
+        list.add("/Users/huihui/IdeaProjects/subnit-web/subnit-web-util/target/subnit-web-util-0.0.1-SNAPSHOT.jar");
+        list.add("/Users/huihui/.m2/repository/org/ow2/asm/asm/7.1/asm-7.1.jar");
+        list.add("/Users/huihui/.m2/repository/com/google/guava/guava/29.0-jre/guava-29.0-jre.jar");
+        String[] urls = list.toArray(new String[6]);
+        List<ShadowClass> allClass = getAllClass(urls);
         String filter = "{\n" +
                 "  \"include\": {\n" +
                 "    \"targetPackage\": \"^(com.subnit).*$\"\n" +
