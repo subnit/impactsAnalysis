@@ -97,8 +97,18 @@ public class CodeDiff {
 
     private static List<ClassInfo> diffMethods(String gitPath, String newBranchName, String oldBranchName, String username, String password) {
         try {
+            CredentialsProvider credentialsProvider = new UsernamePasswordCredentialsProvider(username, password);
+            String localDir = "D:\\gitTemp";
+            deleteDir(new File(localDir));
+            Git localGit = Git.cloneRepository()
+                .setURI(gitPath)
+                .setBranch(newBranchName)
+                .setDirectory(new File(localDir))
+                .setCredentialsProvider(credentialsProvider)
+                .call();
+            checkoutAndPull(localGit, oldBranchName);
             //  获取本地分支
-            GitAdapter gitAdapter = new GitAdapter(gitPath);
+            GitAdapter gitAdapter = new GitAdapter(localDir);
             gitAdapter.setCredentialsProvider(username, password);
             Git git = gitAdapter.getGit();
             Ref localBranchRef = gitAdapter.getRepository().exactRef(REF_HEADS + newBranchName);
@@ -366,6 +376,33 @@ public class CodeDiff {
         return null;
     }
 
+
+    public static boolean branchNameExist(Git git, String branchName) throws GitAPIException {
+        List<Ref> refs = git.branchList().call();
+        for (Ref ref : refs) {
+            if (ref.getName().contains(branchName)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static void checkoutAndPull(Git git, String branchName) {
+        try {
+            try {
+                if (branchNameExist(git, branchName)) {//如果分支在本地已存在，直接checkout即可。
+                    git.checkout().setCreateBranch(false).setName(branchName).call();
+                } else {//如果分支在本地不存在，需要创建这个分支，并追踪到远程分支上面。
+                    git.checkout().setCreateBranch(true).setName(branchName).setStartPoint("origin/" + branchName).call();
+                }
+                git.pull().call();//拉取最新的提交
+            } finally {
+                git.close();
+            }
+        } catch (GitAPIException e) {
+            e.printStackTrace();
+        }
+    }
 
     public static void main(String[] args) throws GitAPIException, IOException {
         String path = "src/main/resources/token.properties";
