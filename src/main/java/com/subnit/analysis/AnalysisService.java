@@ -1,7 +1,6 @@
 package com.subnit.analysis;
 
 import com.alibaba.fastjson.JSONObject;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Ordering;
 import com.subnit.base.data.DataUtil;
 
@@ -181,7 +180,7 @@ public class AnalysisService {
         list.add("/Users/huihui/IdeaProjects/subnit-web/subnit-web-util/target/subnit-web-util-0.0.1-SNAPSHOT.jar");
         list.add("/Users/huihui/.m2/repository/org/ow2/asm/asm/7.1/asm-7.1.jar");
         list.add("/Users/huihui/.m2/repository/com/google/guava/guava/29.0-jre/guava-29.0-jre.jar");
-        String[] urls = list.toArray(new String[6]);
+        String[] urls = list.toArray(new String[0]);
         List<ShadowClass> allClass = getAllClass(urls);
         String filter = "{\n" +
                 "  \"include\": {\n" +
