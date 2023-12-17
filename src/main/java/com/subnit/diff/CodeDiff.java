@@ -409,15 +409,11 @@ public class CodeDiff {
         String userName = FileUtil.getSourcingValueBykey("username", path);
         String password = FileUtil.getSourcingValueBykey("password", path);;
         String repo = "/Users/huihui/IdeaProjects/ImpactsAnalysis";
-        String branch = "master";
-        String directory = "/Users/huihui/gitTemp";
 
-
-        CredentialsProvider credentialsProvider = new UsernamePasswordCredentialsProvider(userName, password);
         String gitBranchA = "master";
         String gitBranchB = "gitUtil";
         List<ClassInfo> classInfos = diffMethods(repo, gitBranchA, gitBranchB, userName, password);
-        //List<DiffEntry> diff = getDiff(credentialsProvider, repo, gitBranchA, gitBranchB, directory);
+       // List<DiffEntry> diff = getDiff(credentialsProvider, repo, gitBranchA, gitBranchB, directory);
         System.out.println(JSONObject.toJSONString(classInfos));
     }
 

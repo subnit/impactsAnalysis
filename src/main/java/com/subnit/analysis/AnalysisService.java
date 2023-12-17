@@ -81,7 +81,7 @@ public class AnalysisService {
 
 
 
-    public   static List<MethodCoupling> getAllMethodCoupling(List<ShadowClass> classesFromJarClassLoader, String filter) {
+    public static List<MethodCoupling> getAllMethodCoupling(List<ShadowClass> classesFromJarClassLoader, String filter) {
         CouplingFilterConfig filterConfig = JSONObject.parseObject(filter, CouplingFilterConfig.class);
         filterConfig.fillPattern();
         final UsageCollector usageCollector = new UsageCollector(filterConfig);
@@ -170,7 +170,6 @@ public class AnalysisService {
 
     public static void main(String[] args) throws MalformedURLException, ClassNotFoundException {
         List<String> list = new ArrayList<>();
-
         //List<ShadowClass> allClass = getAllClass("/Users/huihui/IdeaProjects/subnit-web/subnit-web-util/target/subnit-web-util-0.0.1-SNAPSHOT.jar");
         list.add("/Users/huihui/IdeaProjects/subnit-web/subnit-web-application/target/subnit-web-application-0.0.1-SNAPSHOT.jar");
         list.add("/Users/huihui/IdeaProjects/subnit-web/subnit-web-start/target/subnit-web-start-0.0.1-SNAPSHOT.jar");
